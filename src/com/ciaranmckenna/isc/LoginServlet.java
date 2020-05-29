@@ -6,8 +6,11 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Enumeration;
 
 import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -17,10 +20,33 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * Servlet implementation class LoginServlet
  */
-@WebServlet("/loginServlet")
+@WebServlet(urlPatterns = "/loginServlet")
 public class LoginServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
+	private Connection connection;
        
+	public void init(ServletConfig config) {
+		try {
+			ServletContext context = config.getServletContext();
+			Enumeration<String> parameterNames = context.getInitParameterNames();
+			
+			while(parameterNames.hasMoreElements()) {
+				String eachName = (String) parameterNames.nextElement();
+				System.out.println("Contxt param name: " + eachName);
+				System.out.println("Context param value: " + context.getInitParameter(eachName));
+			}
+			
+			Class.forName("com.mysql.cj.jdbc.Driver");
+			connection = DriverManager.getConnection(context.getInitParameter("dbUrl"), context.getInitParameter("dbUser"),
+					context.getInitParameter("dbPassword"));
+			
+			
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
 
 	/**
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
@@ -30,8 +56,6 @@ public class LoginServlet extends HttpServlet {
 		String password = request.getParameter("password");
 		
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver");
-			Connection connection = DriverManager.getConnection("jdbc:mysql://localhost/mydb", "root", "test");
 			Statement statement = connection.createStatement();
 			ResultSet resultSet = statement.executeQuery("select * from user where email='"+ userName + "' and password='" + password + "'");
 			RequestDispatcher requestDispatcher = request.getRequestDispatcher("homeServlet");
@@ -42,8 +66,6 @@ public class LoginServlet extends HttpServlet {
 				requestDispatcher = request.getRequestDispatcher("login.html");
 				requestDispatcher.include(request, response);
 			}
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
